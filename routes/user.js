@@ -17,28 +17,44 @@ exports.allUsers = function (req, res) {
 };
 
 exports.findById = function (req, res) {
-    User.findById(req.params.id, function (err, user) {
-        if (!err) {
-            if (user) {
-                res.status(200).send(user.toDTO(true));
+    try {
+        User.findById(req.params.id, function (err, user) {
+            if (!err) {
+                if (user) {
+                    if (!res.headerSent) {
+                        res.status(200).send(user.toDTO(true));
+                    }
+                } else {
+                    if (!res.headerSent) {
+                        res.status(404).send({
+                            errorCode: 'USER_NOT_FOUND',
+                            message: 'User ' + req.params.id + ' was not found'
+                        });
+                    }
+                }
             } else {
-                res.status(404).send({
-                    errorCode: 'USER_NOT_FOUND',
-                    message: 'User ' + req.params.id + ' was not found'
-                });
+                console.error(err);
+                if (err.name === 'CastError') {
+                    if (!res.headerSent) {
+                        res.status(404).send({
+                            errorCode: 'USER_NOT_FOUND',
+                            message: 'User ' + req.params.id + ' was not found'
+                        });
+                    }
+                } else {
+                    if (!res.headerSent) {
+                        res.status(500).send(err);
+                    }
+                }
             }
-        } else {
-            console.error(err);
-            if (err.name === 'CastError') {
-                res.status(404).send({
-                    errorCode: 'USER_NOT_FOUND',
-                    message: 'User ' + req.params.id + ' was not found'
-                });
-            } else {
-                res.status(500).send(err);
-            }
+        });
+    } catch (e) {
+        console.log(e);
+        if (!res.headerSent) {
+            res.send(500);
         }
-    });
+    }
+    
 };
 
 exports.findByName = function (req, res) {
@@ -82,6 +98,7 @@ exports.follow = function (req, res) {
                     if (!err) {
                         res.status(201).send(req.user.toDTO(true));
                     } else {
+                        res.status(500).send('Impossible to follow.');
                         console.error(err);
                     }
                 });
@@ -93,6 +110,7 @@ exports.follow = function (req, res) {
             }
         } else {
             console.error(err);
+            res.send(500);
         }
     });
 };

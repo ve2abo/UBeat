@@ -78,22 +78,24 @@ exports.removeTrackFromPlaylist = function (req, res) {
     Playlist.findById(req.params.playlistId, function (err, playlist) {
         if (!err) {
             if (playlist) {
-                console.log(playlist.tracks);
-                var trackToRemove = playlist.tracks.id(req.params.trackId);
+                var trackToRemove = playlist.tracks.filter(function (track) {
+                    return track.trackId == req.params.trackId;
+                }).pop();
+
                 if (trackToRemove) {
                     trackToRemove.remove();
                     playlist.save();
-                    res.status(200).send();
+                    res.status(200).send(playlist);
                 } else {
                     res.status(404).send({
                         errorCode: 'TRACK_NOT_FOUND',
-                        message: 'Track ' + req.params.id + ' was not found'
+                        message: 'Track ' + req.params.trackId + ' was not found'
                     });
                 }
             } else {
                 res.status(404).send({
                     errorCode: 'PLAYLIST_NOT_FOUND',
-                    message: 'Playlist ' + req.params.id + ' was not found'
+                    message: 'Playlist ' + req.params.playlistId + ' was not found'
                 });
             }
         } else {
@@ -101,7 +103,7 @@ exports.removeTrackFromPlaylist = function (req, res) {
             if (err.name === 'CastError') {
                 res.status(404).send({
                     errorCode: 'PLAYLIST_NOT_FOUND',
-                    message: 'Playlist ' + req.params.id + ' was not found'
+                    message: 'Playlist ' + req.params.playlistId + ' was not found'
                 });
             } else {
                 res.status(500).send(err);
